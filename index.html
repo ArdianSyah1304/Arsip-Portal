@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ArsipKu Premium - Digital System</title>
+    
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary: #2563eb; --accent: #3b82f6; --success: #10b981;
+            --danger: #ef4444; --warning: #f59e0b; --dark: #0f172a;
+            --light: #ffffff; --bg: #f1f5f9; --gray: #e2e8f0;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { background-color: var(--bg); color: var(--dark); overflow-x: hidden; }
+
+        /* UI Elements */
+        .btn-main { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-main:active { transform: scale(0.98); }
+        .form-control { width: 100%; padding: 12px 16px; border: 1.5px solid var(--gray); border-radius: 12px; margin-bottom: 1rem; outline: none; font-size: 1rem; transition: 0.3s; }
+        .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1); }
+        .card { background: white; padding: 1.2rem; border-radius: 20px; border: 1px solid var(--gray); margin-bottom: 1rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+
+        /* Login */
+        #login-page { height: 100vh; display: flex; justify-content: center; align-items: center; background: linear-gradient(135deg, #2563eb, #0f172a); padding: 20px; }
+        .login-card { background: white; padding: 2.5rem; border-radius: 30px; width: 100%; max-width: 400px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); text-align: center; }
+
+        /* Sidebar & Navigation */
+        .sidebar { position: fixed; top: 0; left: -280px; width: 280px; height: 100%; background: white; z-index: 2000; transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1); padding: 2rem 1.5rem; display: flex; flex-direction: column; border-right: 1px solid var(--gray); }
+        .sidebar.active { left: 0; }
+        .sidebar-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.5); display: none; z-index: 1999; backdrop-filter: blur(4px); }
+        .sidebar-overlay.active { display: block; }
+        
+        .nav-item { display: flex; align-items: center; gap: 12px; padding: 14px 16px; color: #64748b; text-decoration: none; border-radius: 12px; margin-bottom: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .nav-item:hover, .nav-item.active { background: #eff6ff; color: var(--primary); }
+        .nav-item.logout { margin-top: auto; color: var(--danger); background: #fff1f2; }
+
+        /* Custom Header */
+        .header { position: sticky; top: 0; background: rgba(255,255,255,0.8); backdrop-filter: blur(10px); padding: 15px 20px; border-bottom: 1px solid var(--gray); display: flex; align-items: center; justify-content: space-between; z-index: 1000; }
+
+        /* Stats Grid */
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+        .stat-card { padding: 1.5rem; border-radius: 20px; color: white; position: relative; overflow: hidden; }
+        .stat-card i { position: absolute; right: -10px; bottom: -10px; opacity: 0.2; transform: scale(2); }
+
+        /* User Grid */
+        .user-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; }
+        .doc-item { background: white; padding: 20px; border-radius: 20px; text-align: center; border: 1.5px solid var(--gray); transition: 0.3s; cursor: pointer; }
+        .doc-item:hover { border-color: var(--primary); transform: translateY(-5px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+
+        /* Modal */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 10000; backdrop-filter: blur(5px); }
+        .custom-modal { background: white; padding: 2rem; border-radius: 24px; width: 90%; max-width: 450px; animation: slideUp 0.3s ease; }
+
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        
+        @media print { .header, .sidebar, .btn-main, .sidebar-overlay, .no-print { display: none !important; } .card { border: 1px solid #ccc; box-shadow: none; } }
+    </style>
+</head>
+<body>
+
+<div id="modal-box" class="modal-overlay">
+    <div class="custom-modal" id="modal-inner"></div>
+</div>
+
+<div class="sidebar-overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+<section id="login-page">
+    <div class="login-card">
+        <div style="background: var(--primary); width: 65px; height: 65px; border-radius: 20px; margin: 0 auto 1.5rem; display: flex; align-items: center; justify-content: center; color: white; box-shadow: 0 10px 20px rgba(37, 99, 235, 0.3);">
+            <i data-lucide="archive" size="32"></i>
+        </div>
+        <h2 style="font-weight: 800; font-size: 1.8rem; margin-bottom: 0.5rem;">ArsipKu</h2>
+        <p style="color: #64748b; font-size: 0.9rem; margin-bottom: 2rem;">Silahkan login untuk melanjutkan</p>
+        
+        <input type="text" id="log-u" class="form-control" placeholder="Nama Lengkap / Username">
+        <input type="password" id="log-p" class="form-control" placeholder="Password / No HP">
+        <button class="btn-main" onclick="handleLogin()">Masuk Sekarang <i data-lucide="arrow-right" size="18"></i></button>
+    </div>
+</section>
+
+<section id="admin-view" style="display:none">
+    <header class="header">
+        <button onclick="toggleSidebar()" style="background:none; border:none; cursor:pointer; color: var(--dark);"><i data-lucide="menu"></i></button>
+        <strong style="font-weight: 800; letter-spacing: 1px;">ADMIN PANEL</strong>
+        <div style="width:24px;"></div>
+    </header>
+
+    <aside class="sidebar" id="sidebar">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:2.5rem;">
+            <div style="background:var(--primary); padding:8px; border-radius:10px; color:white;"><i data-lucide="box" size="20"></i></div>
+            <h2 style="font-weight: 800; color: var(--dark); font-size: 1.4rem;">ArsipKu</h2>
+        </div>
+        <nav style="flex:1">
+            <div class="nav-item active" onclick="navTo('adm-home', this)"><i data-lucide="layout-grid"></i> Dashboard</div>
+            <div class="nav-item" onclick="navTo('adm-arsip', this)"><i data-lucide="file-stack"></i> Kelola Arsip</div>
+            <div class="nav-item" onclick="navTo('adm-petugas', this)"><i data-lucide="users"></i> Hak Akses</div>
+            <div class="nav-item" onclick="navTo('adm-laporan', this)"><i data-lucide="clipboard-list"></i> Laporan Bulanan</div>
+            <div class="nav-item" onclick="navTo('adm-pesan', this)"><i data-lucide="mail-warning"></i> Pesan Bantuan</div>
+            <div class="nav-item" onclick="navTo('adm-setting', this)"><i data-lucide="settings-2"></i> Pengaturan</div>
+        </nav>
+        <div class="nav-item logout" onclick="location.reload()"><i data-lucide="log-out"></i> Keluar</div>
+    </aside>
+
+    <main style="padding: 20px;">
+        <div id="adm-home" class="sec">
+            <h3 id="greet-adm" style="font-weight: 800; margin-bottom: 20px; font-size: 1.4rem;">Halo, Admin</h3>
+            <div class="stats-grid">
+                <div class="stat-card" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">
+                    <small>Total Arsip</small><h2 id="st-a" style="font-size: 2rem;">0</h2><i data-lucide="file-text"></i>
+                </div>
+                <div class="stat-card" style="background: linear-gradient(135deg, #10b981, #059669);">
+                    <small>Pesan Masuk</small><h2 id="st-p" style="font-size: 2rem;">0</h2><i data-lucide="message-square"></i>
+                </div>
+            </div>
+            
+            <div class="card" style="border: 2px dashed var(--primary); background: #f8faff;">
+                <p style="font-weight: 800; margin-bottom: 10px; color: var(--primary);">Link Sharing (PENTING)</p>
+                <p style="font-size: 0.8rem; color: #64748b; margin-bottom: 15px;">Salin link di bawah ini setiap ada perubahan data agar User di HP lain bisa melihat dokumen terbaru.</p>
+                <button onclick="copyDataLink()" class="btn-main"><i data-lucide="share-2"></i> Salin Link Data Terkini</button>
+            </div>
+        </div>
+
+        <div id="adm-arsip" class="sec" style="display:none">
+            <div style="display:flex; justify-content:space-between; margin-bottom:20px; align-items:center;">
+                <h3 style="font-weight: 800;">Manajemen Arsip</h3>
+                <button onclick="modalArsip()" class="btn-main" style="width:auto; padding:10px 20px; font-size:0.85rem;">+ Tambah File</button>
+            </div>
+            <div id="admin-arsip-list"></div>
+        </div>
+
+        <div id="adm-petugas" class="sec" style="display:none">
+            <h3 style="font-weight:800; margin-bottom:20px;">Hak Akses Petugas</h3>
+            <div id="list-petugas"></div>
+        </div>
+
+        <div id="adm-laporan" class="sec" style="display:none">
+            <div class="card" id="print-area">
+                <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 20px;">
+                    <h2 style="text-transform: uppercase;">Laporan Rekapitulasi Arsip</h2>
+                    <p id="lp-date"></p>
+                </div>
+                <table style="width:100%; border-collapse: collapse;" border="1">
+                    <thead><tr style="background:#f1f5f9;">
+                        <th style="padding:10px;">No</th><th>Nama Dokumen</th><th>Tipe</th><th>Tanggal</th>
+                    </tr></thead>
+                    <tbody id="report-body" style="text-align:center;"></tbody>
+                </table>
+            </div>
+            <button class="btn-main" onclick="window.print()"><i data-lucide="printer"></i> Cetak Laporan</button>
+        </div>
+
+        <div id="adm-pesan" class="sec" style="display:none">
+            <h3 style="font-weight: 800; margin-bottom:20px;">Kotak Masuk</h3>
+            <div id="list-pesan"></div>
+        </div>
+
+        <div id="adm-setting" class="sec" style="display:none">
+            <h3 style="font-weight: 800; margin-bottom:20px;">Pengaturan Sistem</h3>
+            <div class="card">
+                <p style="margin-bottom:15px; font-weight:600;">Data Management</p>
+                <button class="btn-main" onclick="backupData()" style="background:#f1f5f9; color:var(--dark); margin-bottom:12px; border:1px solid #ddd;"><i data-lucide="download-cloud"></i> Backup Data (JSON)</button>
+                <button class="btn-main" onclick="resetData()" style="background:var(--danger);"><i data-lucide="refresh-ccw"></i> Reset Seluruh Sistem</button>
+            </div>
+        </div>
+    </main>
+</section>
+
+<section id="user-view" style="display:none">
+    <header class="header">
+        <button onclick="toggleSidebarUser()" style="background:none; border:none; cursor:pointer;"><i data-lucide="menu"></i></button>
+        <strong style="font-weight:800; color:var(--primary);">ARSIPKU USER</strong>
+        <div style="width:24px;"></div>
+    </header>
+
+    <aside class="sidebar" id="sidebar-user">
+        <h2 style="font-weight: 800; color: var(--primary); margin-bottom: 2.5rem;">ArsipKu</h2>
+        <div class="nav-item active"><i data-lucide="folder-open"></i> Semua Dokumen</div>
+        <div class="nav-item logout" onclick="location.reload()"><i data-lucide="log-out"></i> Keluar</div>
+    </aside>
+
+    <main style="padding: 20px;">
+        <div class="stats-grid">
+            <div class="stat-card" style="background: linear-gradient(135deg, #6366f1, #4338ca);">
+                <small>Dokumen Tersedia</small><h2 id="u-st-a" style="font-size: 2rem;">0</h2><i data-lucide="file-check"></i>
+            </div>
+            <div class="stat-card" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                <small>Status Akun</small><h2 style="font-size: 1.2rem; margin-top:10px;">User Aktif</h2><i data-lucide="user-check"></i>
+            </div>
+        </div>
+
+        <h3 id="greet-usr" style="font-weight: 800; margin-bottom: 5px;">Halo, User</h3>
+        <p style="color:#64748b; font-size:0.85rem; margin-bottom:20px;">Klik tombol unduh untuk mendapatkan file.</p>
+        
+        <div id="user-grid" class="user-grid"></div>
+        
+        <div class="card" style="margin-top:40px; border-style:dashed; background:#f8fafc;">
+            <h4 style="margin-bottom:15px; display:flex; align-items:center; gap:8px;"><i data-lucide="help-circle" class="text-primary"></i> Butuh Bantuan?</h4>
+            <textarea id="msg-input" class="form-control" rows="3" placeholder="Tulis kendala Anda di sini..."></textarea>
+            <button class="btn-main" onclick="sendPesan()">Kirim Pesan ke Admin</button>
+        </div>
+    </main>
+</section>
+
+<script>
+    const ADMINS = ['ardiansyah', 'sudarte', 'mala', 'jumadil'];
+    const DEFAULT_PASS = '12345';
+
+    let db_arsip = JSON.parse(localStorage.getItem('db_arsip')) || [];
+    let db_pesan = JSON.parse(localStorage.getItem('db_pesan')) || [];
+    let currentUser = null;
+
+    // AUTO LOAD DATA FROM URL (PENTING!)
+    window.onload = () => {
+        const hashData = window.location.hash.substring(1);
+        if(hashData && hashData.startsWith('data=')) {
+            try {
+                const encoded = hashData.split('=')[1];
+                const decoded = JSON.parse(decodeURIComponent(atob(encoded)));
+                db_arsip = decoded;
+                saveToLocal();
+            } catch(e) { console.error("Data URL tidak valid"); }
+        }
+        lucide.createIcons();
+    };
+
+    function toggleSidebar() {
+        document.getElementById('sidebar').classList.toggle('active');
+        document.getElementById('overlay').classList.toggle('active');
+    }
+
+    function toggleSidebarUser() {
+        document.getElementById('sidebar-user').classList.toggle('active');
+        document.getElementById('overlay').classList.toggle('active');
+    }
+
+    function handleLogin() {
+        const u = document.getElementById('log-u').value.toLowerCase().trim();
+        const p = document.getElementById('log-p').value.trim();
+
+        if(!u || !p) return alert("Harap isi semua kolom!");
+
+        if(ADMINS.includes(u)) {
+            if(p === DEFAULT_PASS) {
+                currentUser = { n: u, role: 'admin' };
+                showView('admin-view');
+                renderAdmin();
+            } else { alert("Password Admin Salah!"); }
+        } else {
+            // LOGIN USER (Password = No HP)
+            currentUser = { n: u, role: 'user', hp: p };
+            showView('user-view');
+            document.getElementById('greet-usr').innerText = "Selamat Datang, " + u;
+            renderUser();
+        }
+    }
+
+    function showView(id) {
+        document.querySelectorAll('section').forEach(s => s.style.display = 'none');
+        document.getElementById(id).style.display = 'block';
+    }
+
+    function navTo(id, el) {
+        document.querySelectorAll('.sec').forEach(s => s.style.display = 'none');
+        document.getElementById(id).style.display = 'block';
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        el.classList.add('active');
+        if(window.innerWidth < 768) toggleSidebar();
+    }
+
+    // CRUD ADMIN
+    function modalArsip() {
+        document.getElementById('modal-box').style.display = 'flex';
+        document.getElementById('modal-inner').innerHTML = `
+            <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
+                <h3 style="font-weight:800;">Upload Dokumen Baru</h3>
+                <button onclick="closeModal()" style="background:none; border:none; cursor:pointer;"><i data-lucide="x"></i></button>
+            </div>
+            <input type="text" id="up-n" class="form-control" placeholder="Nama Dokumen (Contoh: Laporan Keuangan)">
+            <p style="font-size:0.7rem; color:#64748b; margin-bottom:5px;">Pilih File (PDF/Gambar):</p>
+            <input type="file" id="up-f" class="form-control">
+            <button class="btn-main" onclick="saveArsip()">Simpan ke Sistem</button>
+        `;
+        lucide.createIcons();
+    }
+
+    function saveArsip() {
+        const n = document.getElementById('up-n').value;
+        const f = document.getElementById('up-f').files[0];
+        if(!n || !f) return alert("Lengkapi nama dan file!");
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const item = {
+                id: Date.now(),
+                nama: n,
+                raw: e.target.result,
+                tipe: f.type.includes('pdf') ? 'PDF' : 'IMAGE',
+                tgl: new Date().toLocaleDateString('id-ID')
+            };
+            db_arsip.push(item);
+            saveToLocal(); renderAdmin(); closeModal();
+            alert("Berhasil disimpan!");
+        };
+        reader.readAsDataURL(f);
+    }
+
+    function renderAdmin() {
+        document.getElementById('admin-arsip-list').innerHTML = db_arsip.map(a => `
+            <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+                <div style="display:flex; gap:12px; align-items:center;">
+                    <div style="background:#eff6ff; padding:10px; border-radius:12px; color:var(--primary);">
+                        <i data-lucide="${a.tipe === 'PDF' ? 'file-text' : 'image'}"></i>
+                    </div>
+                    <div>
+                        <p style="font-weight:800; font-size:0.95rem;">${a.nama}</p>
+                        <small style="color:#64748b;">${a.tipe} • ${a.tgl}</small>
+                    </div>
+                </div>
+                <button onclick="delArsip(${a.id})" style="border:none; background:#fff1f2; color:var(--danger); padding:10px; border-radius:12px; cursor:pointer;">
+                    <i data-lucide="trash-2" size="18"></i>
+                </button>
+            </div>
+        `).join('');
+
+        document.getElementById('list-petugas').innerHTML = ADMINS.map(adm => `
+            <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <div style="width:40px; height:40px; background:#ddd; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:800;">${adm[0].toUpperCase()}</div>
+                    <strong>${adm}</strong>
+                </div>
+                <span style="font-size:0.7rem; background:var(--primary); color:white; padding:4px 10px; border-radius:20px;">Admin Utama</span>
+            </div>
+        `).join('');
+
+        document.getElementById('list-pesan').innerHTML = db_pesan.map(p => `
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                    <strong>${p.nama} <small style="font-weight:400; color:#64748b;">(${p.hp})</small></strong>
+                </div>
+                <p style="font-size:0.85rem; background:#f8fafc; padding:10px; border-radius:10px;">${p.teks}</p>
+            </div>
+        `).reverse().join('');
+
+        // Laporan
+        document.getElementById('lp-date').innerText = "Periode: " + new Date().toLocaleDateString('id-ID', {month:'long', year:'numeric'});
+        document.getElementById('report-body').innerHTML = db_arsip.map((a, i) => `
+            <tr><td style="padding:8px;">${i+1}</td><td>${a.nama}</td><td>${a.tipe}</td><td>${a.tgl}</td></tr>
+        `).join('');
+
+        document.getElementById('st-a').innerText = db_arsip.length;
+        document.getElementById('st-p').innerText = db_pesan.length;
+        lucide.createIcons();
+    }
+
+    function renderUser() {
+        document.getElementById('user-grid').innerHTML = db_arsip.map(a => `
+            <div class="doc-item">
+                <div style="font-size:2.5rem; margin-bottom:12px;">${a.tipe === 'PDF' ? '📄' : '🖼️'}</div>
+                <p style="font-size:0.8rem; font-weight:800; height:38px; overflow:hidden; margin-bottom:12px;">${a.nama}</p>
+                <a href="${a.raw}" download="${a.nama}" class="btn-main" style="text-decoration:none; padding:8px; font-size:0.75rem; background:var(--dark);">
+                    <i data-lucide="download" size="14"></i> Unduh
+                </a>
+            </div>
+        `).join('');
+        document.getElementById('u-st-a').innerText = db_arsip.length;
+        lucide.createIcons();
+    }
+
+    // SYSTEM FUNCTIONS
+    function copyDataLink() {
+        const dataString = btoa(encodeURIComponent(JSON.stringify(db_arsip)));
+        const fullURL = window.location.origin + window.location.pathname + "#data=" + dataString;
+        
+        const el = document.createElement('textarea');
+        el.value = fullURL;
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+        
+        alert("Link Data Berhasil Disalin! Link ini berisi semua dokumen yang Anda input. Kirim link ini ke User/HP lain.");
+    }
+
+    function sendPesan() {
+        const t = document.getElementById('msg-input').value;
+        if(!t) return alert("Tuliskan pesan terlebih dahulu!");
+        db_pesan.push({ nama: currentUser.n, hp: currentUser.hp, teks: t });
+        localStorage.setItem('db_pesan', JSON.stringify(db_pesan));
+        alert("Pesan terkirim ke Admin!");
+        document.getElementById('msg-input').value = "";
+    }
+
+    function delArsip(id) { if(confirm('Hapus arsip ini?')) { db_arsip = db_arsip.filter(x => x.id != id); saveToLocal(); renderAdmin(); } }
+    function saveToLocal() { localStorage.setItem('db_arsip', JSON.stringify(db_arsip)); }
+    function closeModal() { document.getElementById('modal-box').style.display = 'none'; }
+    function resetData() { if(confirm('Semua data akan dihapus permanen. Lanjutkan?')) { localStorage.clear(); location.reload(); } }
+    function backupData() {
+        const data = JSON.stringify({arsip: db_arsip, pesan: db_pesan});
+        const blob = new Blob([data], {type: "application/json"});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = "ArsipKu_Backup.json";
+        a.click();
+    }
+</script>
+</body>
+</html>
